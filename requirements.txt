@@ -9,3 +9,4 @@ httpx
 anthropic
 python-docx
 sentence-transformers
+apscheduler

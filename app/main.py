@@ -1,7 +1,10 @@
 import json
 import os
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
 from dotenv import load_dotenv
 from fastapi import FastAPI, Form, Request, UploadFile, File
 from fastapi.responses import RedirectResponse
@@ -34,6 +37,33 @@ app = FastAPI()
 app.add_middleware(SessionMiddleware, secret_key=os.environ["SECRET_KEY"])
 
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
+
+
+def run_full_pipeline() -> None:
+    from core.pipeline import run, extract_jobs, embed_jobs, match_jobs
+    print("Scheduled pipeline starting...")
+    run()
+    extract_jobs()
+    embed_jobs()
+    match_jobs()
+    print("Scheduled pipeline done.")
+
+
+_scheduler = BackgroundScheduler()
+_scheduler.add_job(
+    run_full_pipeline,
+    CronTrigger(hour=2, minute=0, timezone=ZoneInfo("Australia/Sydney")),
+)
+
+
+@app.on_event("startup")
+def start_scheduler() -> None:
+    _scheduler.start()
+
+
+@app.on_event("shutdown")
+def stop_scheduler() -> None:
+    _scheduler.shutdown()
 
 
 @app.get("/")
