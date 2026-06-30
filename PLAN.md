@@ -3,7 +3,7 @@
 > Update this file as we go. Tick steps off, and record decisions/tradeoffs
 > in the log at the bottom — that log becomes the design doc later.
 
-## Current step: 10
+## Current step: 12
 
 ## Working ritual (every step)
 1. Claude explains the concept + why, before any code.
@@ -30,7 +30,7 @@ Build locally through step 10. Deploy around step 11. Then ship to the host.
 | 8 | Matcher v1 — LLM rubric, RATE EVERY JOB | Probabilistic thinking; rubric scoring; prompt design | Local | [x] |
 | 9 | Filter-then-rate (embeddings pre-filter) | Embeddings; semantic search; RAG; cost-aware design | Local | [x] |
 | 10 | Observability (tokens, cost, prompt version, outcomes) | The AI harness; lineage | Local | [x] |
-| 11 | **FIRST DEPLOY** — host it, login + URLs working for both of us | Deployment; secrets in prod; the "to production" muscle | → Hosted | [ ] |
+| 11 | **FIRST DEPLOY** — host it, login + URLs working for both of us | Deployment; secrets in prod; the "to production" muscle | → Hosted | [x] |
 | 12 | CV gap suggestions (grounded, honesty line) | Grounding / anti-hallucination | Hosted | [ ] |
 | 13 | CV tailoring — versioned .docx + PDF | Document processing; formatting preservation | Hosted | [ ] |
 | 14 | Draft email + LinkedIn message (draft-only) | Generation; tone control; guardrails | Hosted | [ ] |
@@ -81,5 +81,11 @@ Verify live hosting prices at step 11.
   centralises token counting and cost calculation in one place rather than repeating
   it in each LLM module. save_job() now returns rowcount so new vs duplicate counts
   are tracked without duplicating SQL.
+- Railway for hosting: persistent volume at /data for SQLite + CVs; passwords via
+  env vars; start command set explicitly in Settings (Procfile alone overridden by
+  Railway's auto-detection). DB_PATH and CV_STORE_PATH env vars let the same code
+  work locally and in prod without changes.
+- Model choice: Haiku for all extraction tasks (CV, jobs, matcher). Upgrade only if
+  quality problems appear — Opus is 5x the cost for no benefit on structured extraction.
 
 ## jsamadi display name: "J. Samadi"  (placeholder — confirm real name)
