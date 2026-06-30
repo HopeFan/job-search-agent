@@ -180,7 +180,7 @@ async def cv_upload(request: Request, file: UploadFile = File(...)):
     save_cv(
         user_id=user["id"],
         filename=file.filename,
-        stored_path=str(stored_path.relative_to(Path(__file__).parent.parent)),
+        stored_path=str(stored_path),
         extracted_text=cv_text,
         structured=json.dumps(structured),
     )
