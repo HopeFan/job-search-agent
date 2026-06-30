@@ -1,22 +1,23 @@
 """Insert the two app users. Safe to re-run (INSERT OR IGNORE)."""
+import os
 from pathlib import Path
 import sqlite3
 import bcrypt
 
-DB_PATH = Path(__file__).parent / "jobsearch.db"
+DB_PATH = Path(os.environ.get("DB_PATH", str(Path(__file__).parent / "jobsearch.db")))
 
 USERS = [
     {
         "username": "ehesami",
         "email": "ehesami72@gmail.com",
         "display_name": "Erfan Hesami",
-        "password": "9022127@",
+        "password": os.environ.get("EHESAMI_PASSWORD", "changeme"),
     },
     {
         "username": "jsamadi",
         "email": "jsamadi@placeholder.com",  # update when confirmed
         "display_name": "J. Samadi",          # update when confirmed
-        "password": "9022127@",
+        "password": os.environ.get("JSAMADI_PASSWORD", "changeme"),
     },
 ]
 
