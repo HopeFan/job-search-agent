@@ -25,8 +25,8 @@ from app.database import (
 from core.cv_extractor import extract_text, extract_structured
 from core.embedder import embed
 
-# In production, set CV_STORE_PATH env var to the Railway volume mount (e.g. /data/cvs).
 CV_STORE = Path(os.environ.get("CV_STORE_PATH", str(Path(__file__).parent.parent / "data" / "cvs")))
+CV_STORE.mkdir(parents=True, exist_ok=True)
 
 load_dotenv()
 
