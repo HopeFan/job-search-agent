@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Welcome, {{ display_name }}</h2>
+<p>Your job search dashboard will appear here.</p>
+<nav>
+    <a href="/jobs">Job Results</a> ·
+    <a href="/searches">Search Configuration</a> ·
+    <a href="/cv">My CV</a> ·
+    <a href="/logout">Log out</a>
+</nav>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Job Results</h2>
+<p><a href="/">← Home</a></p>
+
+{% if not jobs %}
+<p>No matched jobs yet. Run the pipeline first.</p>
+{% else %}
+
+{% set band_order = ['strong', 'moderate', 'weak'] %}
+{% set band_labels = {'strong': '✦ Strong', 'moderate': '◆ Moderate', 'weak': '◇ Weak'} %}
+{% set band_colors = {'strong': '#2d6a4f', 'moderate': '#b5651d', 'weak': '#666'} %}
+
+{% for band in band_order %}
+{% set band_jobs = jobs | selectattr('band', 'equalto', band) | list %}
+{% if band_jobs %}
+<h3 style="color: {{ band_colors[band] }}; margin-top: 2rem;">
+    {{ band_labels[band] }} ({{ band_jobs | length }})
+</h3>
+
+{% for job in band_jobs %}
+<article style="border-left: 4px solid {{ band_colors[band] }}; padding-left: 1rem;">
+    <header style="margin-bottom: 0.5rem;">
+        <strong><a href="{{ job.url }}" target="_blank">{{ job.title }}</a></strong>
+        — {{ job.company }}
+        <span style="color: #888; font-size: 0.85rem;"> · {{ job.location }}</span>
+        {% if job.is_stretch %}
+        <span style="background: #fff3cd; color: #856404; padding: 0.1rem 0.4rem;
+                     border-radius: 4px; font-size: 0.8rem; margin-left: 0.5rem;">
+            STRETCH
+        </span>
+        {% endif %}
+    </header>
+    <ul style="margin: 0.3rem 0; font-size: 0.9rem;">
+        {% for reason in job.reasons %}
+        <li>{{ reason }}</li>
+        {% endfor %}
+    </ul>
+    {% if job.stretch_gap %}
+    <p style="font-size: 0.85rem; color: #856404; margin: 0.3rem 0;">
+        <strong>Gap:</strong> {{ job.stretch_gap }}
+    </p>
+    {% endif %}
+</article>
+{% endfor %}
+{% endif %}
+{% endfor %}
+
+{% endif %}
+{% endblock %}

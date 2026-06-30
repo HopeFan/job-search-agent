@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Your CV</h2>
+<p><a href="/">← Home</a></p>
+
+{% if current_cv %}
+<article>
+    <h3>Current CV</h3>
+    <p><strong>File:</strong> {{ current_cv["filename"] }}</p>
+    <p><strong>Uploaded:</strong> {{ current_cv["uploaded_at"] }}</p>
+    {% if structured %}
+    <details>
+        <summary>Extracted structured view</summary>
+        <pre style="font-size: 0.8rem; overflow-x: auto;">{{ structured }}</pre>
+    </details>
+    {% endif %}
+</article>
+{% else %}
+<p>No CV uploaded yet.</p>
+{% endif %}
+
+<article>
+    <h3>Upload{% if current_cv %} new{% endif %} CV</h3>
+    <p>Upload a <code>.docx</code> file. The AI will extract your skills and work history automatically.</p>
+    {% if error %}<p style="color: red;">{{ error }}</p>{% endif %}
+    <form method="post" action="/cv/upload" enctype="multipart/form-data">
+        <input type="file" name="file" accept=".docx" required>
+        <button type="submit">Upload and extract</button>
+    </form>
+</article>
+{% endblock %}

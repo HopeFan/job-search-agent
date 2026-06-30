@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Search Configuration</h2>
+<p><a href="/">← Home</a></p>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+
+    <section>
+        <h3>Job Titles</h3>
+        {% if titles %}
+        <ul>
+            {% for t in titles %}
+            <li style="display: flex; justify-content: space-between; align-items: center;">
+                {{ t["title"] }}
+                <form method="post" action="/searches/titles/{{ t['id'] }}/remove" style="margin: 0;">
+                    <button type="submit" class="outline" style="padding: 0.2rem 0.6rem;">remove</button>
+                </form>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p>No titles yet.</p>
+        {% endif %}
+
+        <form method="post" action="/searches/titles">
+            <fieldset role="group">
+                <input type="text" name="title" placeholder="e.g. Data Engineer" required>
+                <button type="submit">Add</button>
+            </fieldset>
+        </form>
+    </section>
+
+    <section>
+        <h3>Locations</h3>
+        {% if locations %}
+        <ul>
+            {% for l in locations %}
+            <li style="display: flex; justify-content: space-between; align-items: center;">
+                {{ l["location"] }}
+                <form method="post" action="/searches/locations/{{ l['id'] }}/remove" style="margin: 0;">
+                    <button type="submit" class="outline" style="padding: 0.2rem 0.6rem;">remove</button>
+                </form>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p>No locations yet.</p>
+        {% endif %}
+
+        <form method="post" action="/searches/locations">
+            <fieldset role="group">
+                <input type="text" name="location" placeholder="e.g. Melbourne" required>
+                <button type="submit">Add</button>
+            </fieldset>
+        </form>
+    </section>
+
+</div>
+{% endblock %}

@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+jinja2
+python-multipart
+bcrypt
+itsdangerous
+python-dotenv
+httpx
+anthropic
+python-docx
+sentence-transformers
