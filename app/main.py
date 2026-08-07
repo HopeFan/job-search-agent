@@ -165,6 +165,7 @@ def jobs_page(request: Request):
             "reasons":     result["reasons"],
             "is_stretch":  result.get("is_stretch", False),
             "stretch_gap": result.get("stretch_gap"),
+            "gap_suggestions": result.get("gap_suggestions", []),
         })
 
     return templates.TemplateResponse(request, "jobs.html", {"jobs": jobs})

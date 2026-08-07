@@ -42,6 +42,30 @@
         <strong>Gap:</strong> {{ job.stretch_gap }}
     </p>
     {% endif %}
+
+    {% set buried = job.gap_suggestions | selectattr('status', 'equalto', 'buried') | list %}
+    {% set missing = job.gap_suggestions | selectattr('status', 'equalto', 'missing') | list %}
+
+    {% if buried %}
+    <div style="font-size: 0.85rem; margin: 0.3rem 0; background: #eef7ee; padding: 0.5rem; border-radius: 4px;">
+        <strong>Consider adding to your CV:</strong>
+        <ul style="margin: 0.3rem 0 0;">
+            {% for gap in buried %}
+            <li>
+                <strong>{{ gap.skill }}</strong> — {{ gap.suggestion }}
+                <div style="color: #666; font-size: 0.8rem;">Evidence: "{{ gap.evidence }}"</div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% if missing %}
+    <p style="font-size: 0.8rem; color: #888; margin: 0.3rem 0;">
+        <strong>Genuine gaps (not in your CV):</strong>
+        {{ missing | map(attribute='skill') | join(', ') }}
+    </p>
+    {% endif %}
 </article>
 {% endfor %}
 {% endif %}

@@ -3,7 +3,7 @@
 > Update this file as we go. Tick steps off, and record decisions/tradeoffs
 > in the log at the bottom — that log becomes the design doc later.
 
-## Current step: 12
+## Current step: 13
 
 ## Working ritual (every step)
 1. Claude explains the concept + why, before any code.
@@ -31,7 +31,7 @@ Build locally through step 10. Deploy around step 11. Then ship to the host.
 | 9 | Filter-then-rate (embeddings pre-filter) | Embeddings; semantic search; RAG; cost-aware design | Local | [x] |
 | 10 | Observability (tokens, cost, prompt version, outcomes) | The AI harness; lineage | Local | [x] |
 | 11 | **FIRST DEPLOY** — host it, login + URLs working for both of us | Deployment; secrets in prod; the "to production" muscle | → Hosted | [x] |
-| 12 | CV gap suggestions (grounded, honesty line) | Grounding / anti-hallucination | Hosted | [ ] |
+| 12 | CV gap suggestions (grounded, honesty line) | Grounding / anti-hallucination | Hosted | [x] |
 | 13 | CV tailoring — versioned .docx + PDF | Document processing; formatting preservation | Hosted | [ ] |
 | 14 | Draft email + LinkedIn message (draft-only) | Generation; tone control; guardrails | Hosted | [ ] |
 | 15 | Tracker (applied/emailed/messaged, dates, notes, CV version, search, download) | Data modeling; knowing where AI doesn't belong | Hosted | [ ] |
@@ -87,5 +87,16 @@ Verify live hosting prices at step 11.
   work locally and in prod without changes.
 - Model choice: Haiku for all extraction tasks (CV, jobs, matcher). Upgrade only if
   quality problems appear — Opus is 5x the cost for no benefit on structured extraction.
+- CV gap suggestions folded into the existing rate_job() call rather than a second LLM
+  call per job: covers strong-band jobs too (a "good enough" match can still be missing
+  a nice-to-have) without doubling matcher cost. Distinguishes "buried" (real evidence in
+  work_history, just not listed as a skill) from "missing" (no evidence, genuine gap) —
+  the honesty line in code, not just the prompt: testing showed the LLM does not reliably
+  follow "if missing, output null" across repeated calls with identical input (same CV,
+  same job — different result each run). rate_job() now force-nulls evidence/suggestion
+  for any "missing" entry after parsing, so that guarantee doesn't depend on the model's
+  compliance. The "buried vs missing" judgment itself still varies run to run (inherent
+  LLM non-determinism) — accepted as "roughly honest, human double-checks it" rather than
+  chasing further prompt tightening.
 
 ## jsamadi display name: "J. Samadi"  (placeholder — confirm real name)
