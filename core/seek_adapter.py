@@ -12,12 +12,24 @@ ACTOR_URL = (
 )
 
 
-def fetch_raw(title: str, location: str, max_results: int = 50) -> list[dict]:
-    """Call Apify and return raw job dicts exactly as the actor returns them."""
+def fetch_raw(title: str, location: str, max_results: int = 50, date_range: int = 3) -> list[dict]:
+    """Call Apify and return raw job dicts exactly as the actor returns them.
+
+    date_range limits results to postings at most this many days old. The actor
+    defaults to 31 days if unset, which returns far more (and costlier, at
+    $0.0025/result) results than needed for a recurring daily fetch — 3 days
+    gives a buffer in case a scheduled run is ever skipped, without paying for
+    the full 31-day window every time.
+    """
     response = httpx.post(
         ACTOR_URL,
         params={"token": APIFY_TOKEN},
-        json={"searchTerm": title, "location": location, "maxResults": max_results},
+        json={
+            "searchTerm": title,
+            "location": location,
+            "maxResults": max_results,
+            "dateRange": date_range,
+        },
         timeout=120,  # actor can take a while to run
     )
     response.raise_for_status()
@@ -39,7 +51,7 @@ def normalise(raw: dict) -> dict:
     }
 
 
-def fetch_and_normalise(title: str, location: str, max_results: int = 50) -> list[dict]:
+def fetch_and_normalise(title: str, location: str, max_results: int = 50, date_range: int = 3) -> list[dict]:
     """Fetch from Apify and return normalised job dicts ready for the DB."""
-    raw_jobs = fetch_raw(title, location, max_results)
+    raw_jobs = fetch_raw(title, location, max_results, date_range)
     return [normalise(r) for r in raw_jobs]
