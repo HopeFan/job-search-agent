@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>API Costs</h2>
+<p><a href="/">← Home</a></p>
+
+<p style="font-size: 1.2rem;"><strong>Total spend to date: ${{ "%.4f"|format(total_cost) }}</strong></p>
+
+<h3>By prompt type</h3>
+<table style="border-collapse: collapse; width: 100%; margin-bottom: 2rem;">
+    <thead>
+        <tr style="text-align: left; border-bottom: 1px solid #ccc;">
+            <th style="padding: 0.3rem;">Prompt type</th>
+            <th style="padding: 0.3rem;">Calls</th>
+            <th style="padding: 0.3rem;">Errors</th>
+            <th style="padding: 0.3rem;">Cost</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in by_type %}
+        <tr style="border-bottom: 1px solid #eee;">
+            <td style="padding: 0.3rem;">{{ row.prompt_type }}</td>
+            <td style="padding: 0.3rem;">{{ row.calls }}</td>
+            <td style="padding: 0.3rem;">{{ row.errors }}</td>
+            <td style="padding: 0.3rem;">${{ "%.4f"|format(row.cost or 0) }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h3>Last 14 days</h3>
+<table style="border-collapse: collapse; width: 100%;">
+    <thead>
+        <tr style="text-align: left; border-bottom: 1px solid #ccc;">
+            <th style="padding: 0.3rem;">Day</th>
+            <th style="padding: 0.3rem;">Calls</th>
+            <th style="padding: 0.3rem;">Errors</th>
+            <th style="padding: 0.3rem;">Cost</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in daily %}
+        <tr style="border-bottom: 1px solid #eee;">
+            <td style="padding: 0.3rem;">{{ row.day }}</td>
+            <td style="padding: 0.3rem;">{{ row.calls }}</td>
+            <td style="padding: 0.3rem;">{{ row.errors }}</td>
+            <td style="padding: 0.3rem;">${{ "%.4f"|format(row.cost or 0) }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

@@ -24,6 +24,9 @@ from app.database import (
     save_cv_embedding,
     get_current_cv,
     get_ranked_jobs,
+    get_total_cost,
+    get_daily_costs,
+    get_cost_by_prompt_type,
 )
 from core.cv_extractor import extract_text, extract_structured
 from core.embedder import embed
@@ -73,7 +76,7 @@ def home(request: Request):
         return RedirectResponse("/login", status_code=302)
     user = get_user(username)
     return templates.TemplateResponse(
-        request, "home.html", {"display_name": user["display_name"]}
+        request, "home.html", {"display_name": user["display_name"], "username": username}
     )
 
 
@@ -169,6 +172,21 @@ def jobs_page(request: Request):
         })
 
     return templates.TemplateResponse(request, "jobs.html", {"jobs": jobs})
+
+
+@app.get("/costs")
+def costs_page(request: Request):
+    username = request.session.get("username")
+    if not username:
+        return RedirectResponse("/login", status_code=302)
+    if username != "ehesami":
+        return RedirectResponse("/", status_code=302)
+
+    return templates.TemplateResponse(request, "costs.html", {
+        "total_cost": get_total_cost(),
+        "daily": get_daily_costs(),
+        "by_type": get_cost_by_prompt_type(),
+    })
 
 
 @app.get("/cv")

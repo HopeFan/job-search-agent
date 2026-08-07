@@ -257,3 +257,41 @@ def log_llm_call(
             """,
             (prompt_type, model, input_tokens, output_tokens, cost_usd, outcome, error_message),
         )
+
+
+def get_total_cost() -> float:
+    with get_connection() as conn:
+        row = conn.execute("SELECT SUM(cost_usd) as total FROM llm_calls").fetchone()
+        return row["total"] or 0.0
+
+
+def get_daily_costs(limit_days: int = 14):
+    with get_connection() as conn:
+        return conn.execute(
+            """
+            SELECT date(called_at) as day,
+                   COUNT(*) as calls,
+                   SUM(cost_usd) as cost,
+                   SUM(outcome = 'error') as errors
+            FROM llm_calls
+            GROUP BY day
+            ORDER BY day DESC
+            LIMIT ?
+            """,
+            (limit_days,),
+        ).fetchall()
+
+
+def get_cost_by_prompt_type():
+    with get_connection() as conn:
+        return conn.execute(
+            """
+            SELECT prompt_type,
+                   COUNT(*) as calls,
+                   SUM(cost_usd) as cost,
+                   SUM(outcome = 'error') as errors
+            FROM llm_calls
+            GROUP BY prompt_type
+            ORDER BY cost DESC
+            """
+        ).fetchall()
