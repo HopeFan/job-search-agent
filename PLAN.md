@@ -124,6 +124,16 @@ Verify live hosting prices at step 11.
   10-second manual "Export to PDF" in Word, which the user already has. Revisit only if
   manual export becomes a real recurring pain point, not preemptively.
 
+- Step 15 tracker: `applied_at`/`emailed_at`/`messaged_at` are separate nullable
+  timestamp columns on `user_jobs`, not more values crammed into `status`. These
+  three actions aren't mutually exclusive stages (you can email AND apply AND
+  message for the same job, in any order) and the tracker needs *when* each
+  happened, not just *whether*. `status` is narrowed to manual triage only
+  (new/reviewed/rejected) — a single-value field genuinely fits that, since a
+  job is in exactly one triage state at a time. `tailored_cv_id` links a
+  user_job to the specific CV version used for that application, so the
+  tracker can show/download the right one later.
+
 - Step 14 draft generation ships a plain, professional, grounded first pass —
   tone/voice tuning (how warm, how direct, what to lead with) is explicitly deferred
   to a follow-up pass once there's real generated output to react to, rather than

@@ -93,10 +93,14 @@ CREATE TABLE IF NOT EXISTS user_jobs (
     id       INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id  INTEGER NOT NULL REFERENCES users(id),
     job_id   INTEGER NOT NULL REFERENCES jobs(id),
-    status       TEXT    NOT NULL DEFAULT 'new', -- new | reviewed | applied | rejected
+    status       TEXT    NOT NULL DEFAULT 'new', -- new | reviewed | rejected (manual triage only)
     match_result TEXT,                           -- JSON: band, reasons, is_stretch, stretch_gap
     notes        TEXT,
     saved_at     TEXT    NOT NULL DEFAULT (datetime('now')),
+    applied_at   TEXT,                           -- set when the user marks this job applied
+    emailed_at   TEXT,                           -- set when the user marks an email sent
+    messaged_at  TEXT,                           -- set when the user marks a LinkedIn message sent
+    tailored_cv_id INTEGER REFERENCES tailored_cvs(id), -- CV version used for this application, if any
     UNIQUE (user_id, job_id)
 );
 

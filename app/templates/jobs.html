@@ -76,6 +76,33 @@
     <p style="margin: 0.3rem 0;">
         <a href="/jobs/{{ job.id }}/draft-outreach" style="font-size: 0.85rem;">Draft outreach message →</a>
     </p>
+
+    <p style="margin: 0.3rem 0; display: flex; gap: 1rem;">
+        <form method="post" action="/jobs/{{ job.id }}/applied" style="display: inline;">
+            <input type="hidden" name="applied" value="{{ 'true' if job.applied_at else 'false' }}">
+            <label style="font-size: 0.85rem;">
+                <input type="checkbox" {% if job.applied_at %}checked{% endif %}
+                       onchange="this.form.applied.value = this.checked; this.form.submit();">
+                Applied
+            </label>
+        </form>
+        <form method="post" action="/jobs/{{ job.id }}/emailed" style="display: inline;">
+            <input type="hidden" name="emailed" value="{{ 'true' if job.emailed_at else 'false' }}">
+            <label style="font-size: 0.85rem;">
+                <input type="checkbox" {% if job.emailed_at %}checked{% endif %}
+                       onchange="this.form.emailed.value = this.checked; this.form.submit();">
+                Emailed
+            </label>
+        </form>
+        <form method="post" action="/jobs/{{ job.id }}/messaged" style="display: inline;">
+            <input type="hidden" name="messaged" value="{{ 'true' if job.messaged_at else 'false' }}">
+            <label style="font-size: 0.85rem;">
+                <input type="checkbox" {% if job.messaged_at %}checked{% endif %}
+                       onchange="this.form.messaged.value = this.checked; this.form.submit();">
+                Messaged
+            </label>
+        </form>
+    </p>
 </article>
 {% endfor %}
 {% endif %}

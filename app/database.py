@@ -88,7 +88,8 @@ def get_ranked_jobs(user_id: int) -> list:
         return conn.execute(
             """
             SELECT j.id, j.title, j.company, j.location, j.url, j.posted_at,
-                   uj.match_result, uj.status
+                   uj.match_result, uj.status,
+                   uj.applied_at, uj.emailed_at, uj.messaged_at
             FROM user_jobs uj
             JOIN jobs j ON j.id = uj.job_id
             WHERE uj.user_id = ? AND j.is_active = 1 AND uj.match_result IS NOT NULL
@@ -145,6 +146,45 @@ def get_job_match(user_id: int, job_id: int):
             """,
             (user_id, job_id),
         ).fetchone()
+
+
+def set_job_applied(user_id: int, job_id: int, applied: bool) -> None:
+    """Set or clear the applied_at timestamp for a user's job (toggle, not one-way)."""
+    with get_connection() as conn:
+        conn.execute(
+            """
+            UPDATE user_jobs
+            SET applied_at = CASE WHEN ? THEN datetime('now') ELSE NULL END
+            WHERE user_id = ? AND job_id = ?
+            """,
+            (applied, user_id, job_id),
+        )
+
+
+def set_job_emailed(user_id: int, job_id: int, emailed: bool) -> None:
+    """Set or clear the emailed_at timestamp for a user's job (toggle, not one-way)."""
+    with get_connection() as conn:
+        conn.execute(
+            """
+            UPDATE user_jobs
+            SET emailed_at = CASE WHEN ? THEN datetime('now') ELSE NULL END
+            WHERE user_id = ? AND job_id = ?
+            """,
+            (emailed, user_id, job_id),
+        )
+
+
+def set_job_messaged(user_id: int, job_id: int, messaged: bool) -> None:
+    """Set or clear the messaged_at timestamp for a user's job (toggle, not one-way)."""
+    with get_connection() as conn:
+        conn.execute(
+            """
+            UPDATE user_jobs
+            SET messaged_at = CASE WHEN ? THEN datetime('now') ELSE NULL END
+            WHERE user_id = ? AND job_id = ?
+            """,
+            (messaged, user_id, job_id),
+        )
 
 
 def get_jobs_to_match(user_id: int) -> list:

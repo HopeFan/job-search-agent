@@ -33,6 +33,9 @@ from app.database import (
     get_total_cost,
     get_daily_costs,
     get_cost_by_prompt_type,
+    set_job_applied,
+    set_job_emailed,
+    set_job_messaged,
 )
 from core.cv_extractor import extract_text, extract_structured
 from core.embedder import embed
@@ -182,9 +185,42 @@ def jobs_page(request: Request):
             "is_stretch":  result.get("is_stretch", False),
             "stretch_gap": result.get("stretch_gap"),
             "gap_suggestions": result.get("gap_suggestions", []),
+            "applied_at":  row["applied_at"],
+            "emailed_at":  row["emailed_at"],
+            "messaged_at": row["messaged_at"],
         })
 
     return templates.TemplateResponse(request, "jobs.html", {"jobs": jobs})
+
+
+@app.post("/jobs/{job_id}/applied")
+def toggle_applied(request: Request, job_id: int, applied: bool = Form()):
+    username = request.session.get("username")
+    if not username:
+        return RedirectResponse("/login", status_code=302)
+    user = get_user(username)
+    set_job_applied(user["id"], job_id, applied)
+    return RedirectResponse("/jobs", status_code=302)
+
+
+@app.post("/jobs/{job_id}/emailed")
+def toggle_emailed(request: Request, job_id: int, emailed: bool = Form()):
+    username = request.session.get("username")
+    if not username:
+        return RedirectResponse("/login", status_code=302)
+    user = get_user(username)
+    set_job_emailed(user["id"], job_id, emailed)
+    return RedirectResponse("/jobs", status_code=302)
+
+
+@app.post("/jobs/{job_id}/messaged")
+def toggle_messaged(request: Request, job_id: int, messaged: bool = Form()):
+    username = request.session.get("username")
+    if not username:
+        return RedirectResponse("/login", status_code=302)
+    user = get_user(username)
+    set_job_messaged(user["id"], job_id, messaged)
+    return RedirectResponse("/jobs", status_code=302)
 
 
 @app.get("/jobs/{job_id}/tailor")
