@@ -1,5 +1,7 @@
 import json
 import os
+import re
+from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -7,7 +9,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from dotenv import load_dotenv
 from fastapi import FastAPI, Form, Request, UploadFile, File
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 import bcrypt
 from starlette.middleware.sessions import SessionMiddleware
@@ -24,15 +26,24 @@ from app.database import (
     save_cv_embedding,
     get_current_cv,
     get_ranked_jobs,
+    get_job_match,
+    save_tailored_cv,
+    get_tailored_cvs_for_job,
+    get_tailored_cv,
     get_total_cost,
     get_daily_costs,
     get_cost_by_prompt_type,
 )
 from core.cv_extractor import extract_text, extract_structured
 from core.embedder import embed
+from core.cv_tailor import propose_edits, apply_proposals
+from docx import Document
 
 CV_STORE = Path(os.environ.get("CV_STORE_PATH", str(Path(__file__).parent.parent / "data" / "cvs")))
 CV_STORE.mkdir(parents=True, exist_ok=True)
+
+TAILORED_CV_STORE = CV_STORE / "tailored"
+TAILORED_CV_STORE.mkdir(parents=True, exist_ok=True)
 
 load_dotenv()
 
@@ -160,6 +171,7 @@ def jobs_page(request: Request):
     for row in raw_jobs:
         result = json.loads(row["match_result"])
         jobs.append({
+            "id":          row["id"],
             "title":       row["title"],
             "company":     row["company"],
             "location":    row["location"],
@@ -172,6 +184,101 @@ def jobs_page(request: Request):
         })
 
     return templates.TemplateResponse(request, "jobs.html", {"jobs": jobs})
+
+
+@app.get("/jobs/{job_id}/tailor")
+def tailor_cv_page(request: Request, job_id: int):
+    username = request.session.get("username")
+    if not username:
+        return RedirectResponse("/login", status_code=302)
+    user = get_user(username)
+
+    job = get_job_match(user["id"], job_id)
+    if not job:
+        return RedirectResponse("/jobs", status_code=302)
+
+    cv = get_current_cv(user["id"])
+    if not cv:
+        return RedirectResponse("/cv", status_code=302)
+
+    gap_suggestions = json.loads(job["match_result"]).get("gap_suggestions", [])
+    doc = Document(cv["stored_path"])
+    proposals = propose_edits(doc, gap_suggestions)
+    saved_versions = get_tailored_cvs_for_job(user["id"], job_id)
+
+    return templates.TemplateResponse(request, "tailor_cv.html", {
+        "job": job,
+        "proposals": proposals,
+        "saved_versions": saved_versions,
+        "just_saved": request.query_params.get("saved") == "1",
+    })
+
+
+def _sanitize_for_filename(text: str) -> str:
+    return re.sub(r"[^A-Za-z0-9]+", "", text)
+
+
+@app.post("/jobs/{job_id}/tailor")
+async def tailor_cv_submit(request: Request, job_id: int):
+    username = request.session.get("username")
+    if not username:
+        return RedirectResponse("/login", status_code=302)
+    user = get_user(username)
+
+    job = get_job_match(user["id"], job_id)
+    if not job:
+        return RedirectResponse("/jobs", status_code=302)
+
+    cv = get_current_cv(user["id"])
+    if not cv:
+        return RedirectResponse("/cv", status_code=302)
+
+    form = await request.form()
+    proposal_count = int(form.get("proposal_count", 0))
+
+    proposals = []
+    for i in range(proposal_count):
+        if form.get(f"include_{i}") != "on":
+            continue
+        proposals.append({
+            "category": form[f"category_{i}"],
+            "proposed_text": form[f"proposed_text_{i}"],
+        })
+
+    if not proposals:
+        return RedirectResponse(f"/jobs/{job_id}/tailor", status_code=302)
+
+    doc = Document(cv["stored_path"])
+    apply_proposals(doc, proposals)
+
+    filename = (
+        f"{_sanitize_for_filename(user['display_name'])}_"
+        f"{_sanitize_for_filename(job['title'])}_"
+        f"{datetime.now().strftime('%Y%m%d')}.docx"
+    )
+    stored_path = TAILORED_CV_STORE / filename
+    doc.save(stored_path)
+    save_tailored_cv(user["id"], job_id, filename, str(stored_path))
+
+    return RedirectResponse(f"/jobs/{job_id}/tailor?saved=1", status_code=302)
+
+
+@app.get("/tailored-cv/{tailored_cv_id}/download")
+def download_tailored_cv(request: Request, tailored_cv_id: int):
+    username = request.session.get("username")
+    if not username:
+        return RedirectResponse("/login", status_code=302)
+    user = get_user(username)
+
+    tailored = get_tailored_cv(user["id"], tailored_cv_id)
+    if not tailored:
+        return RedirectResponse("/jobs", status_code=302)
+
+    return FileResponse(
+        tailored["stored_path"],
+        filename=tailored["filename"],
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    )
 
 
 @app.get("/costs")

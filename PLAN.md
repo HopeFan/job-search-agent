@@ -3,7 +3,7 @@
 > Update this file as we go. Tick steps off, and record decisions/tradeoffs
 > in the log at the bottom — that log becomes the design doc later.
 
-## Current step: 13
+## Current step: 14
 
 ## Working ritual (every step)
 1. Claude explains the concept + why, before any code.
@@ -32,7 +32,7 @@ Build locally through step 10. Deploy around step 11. Then ship to the host.
 | 10 | Observability (tokens, cost, prompt version, outcomes) | The AI harness; lineage | Local | [x] |
 | 11 | **FIRST DEPLOY** — host it, login + URLs working for both of us | Deployment; secrets in prod; the "to production" muscle | → Hosted | [x] |
 | 12 | CV gap suggestions (grounded, honesty line) | Grounding / anti-hallucination | Hosted | [x] |
-| 13 | CV tailoring — versioned .docx + PDF | Document processing; formatting preservation | Hosted | [ ] |
+| 13 | CV tailoring — versioned .docx (PDF deferred, see log) | Document processing; formatting preservation | Hosted | [x] |
 | 14 | Draft email + LinkedIn message (draft-only) | Generation; tone control; guardrails | Hosted | [ ] |
 | 15 | Tracker (applied/emailed/messaged, dates, notes, CV version, search, download) | Data modeling; knowing where AI doesn't belong | Hosted | [ ] |
 | 16 | Interview tracking (multi-round) + thank-you drafts | Lifecycle modeling; grounded generation | Hosted | [ ] |
@@ -98,5 +98,30 @@ Verify live hosting prices at step 11.
   compliance. The "buried vs missing" judgment itself still varies run to run (inherent
   LLM non-determinism) — accepted as "roughly honest, human double-checks it" rather than
   chasing further prompt tightening.
+
+- CV tailoring targets only the skills table, not free-text sections: a paragraph is
+  only editable if every run inside it shares identical formatting (Word splits
+  paragraphs into multiple runs from spell-check alone, with no visual difference) —
+  editing a run-with-different-formatting would silently corrupt the CV's look, so
+  is_editable()/apply_edit() refuse rather than guess. The skills table itself is found
+  by shape heuristic (2 columns, short category-label first column), not a hardcoded
+  table index, since a future CV revision reordering tables would otherwise silently
+  break tailoring with no signal. Only "buried" gap suggestions (real evidence exists)
+  are ever proposed as edits — "missing" ones would mean fabricating experience, which
+  violates the grounding/honesty-line rule. Multiple buried skills landing in the same
+  category are grouped into one combined proposal before display, not applied as
+  independent edits — independent edits computed against the same original cell text
+  would clobber each other when applied in sequence (caught via testing against the
+  real CV before shipping). The review flow always shows proposals before writing
+  anything (propose_edits is read-only; apply_proposals only runs after the user
+  confirms, with editable text per proposal) — CVs are the one place in this app where
+  "review before apply" matters enough to build a step for it, unlike the matcher's
+  fully-automated rating.
+- PDF generation deferred (v1 ships .docx only): python-docx has no rendering engine,
+  so a real PDF needs either LibreOffice headless installed server-side (heavy —
+  hundreds of MB, longer builds, font-substitution risk) or a cloud conversion API
+  (ongoing cost + sends personal CV data to a third party). Neither is justified by a
+  10-second manual "Export to PDF" in Word, which the user already has. Revisit only if
+  manual export becomes a real recurring pain point, not preemptively.
 
 ## jsamadi display name: "J. Samadi"  (placeholder — confirm real name)

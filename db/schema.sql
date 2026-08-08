@@ -99,3 +99,13 @@ CREATE TABLE IF NOT EXISTS user_jobs (
     saved_at     TEXT    NOT NULL DEFAULT (datetime('now')),
     UNIQUE (user_id, job_id)
 );
+
+-- A saved, tailored .docx for one user + one job (step 13 CV tailoring).
+CREATE TABLE IF NOT EXISTS tailored_cvs (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id     INTEGER NOT NULL REFERENCES users(id),
+    job_id      INTEGER NOT NULL REFERENCES jobs(id),
+    filename    TEXT    NOT NULL,
+    stored_path TEXT    NOT NULL,
+    created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+);

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Tailor CV — {{ job.title }} @ {{ job.company }}</h2>
+<p><a href="/jobs">← Back to jobs</a></p>
+
+{% if just_saved %}
+<p style="background: #eef7ee; padding: 0.5rem; border-radius: 4px;">CV saved.</p>
+{% endif %}
+
+{% if saved_versions %}
+<h3>Saved versions</h3>
+<ul>
+    {% for v in saved_versions %}
+    <li><a href="/tailored-cv/{{ v.id }}/download">{{ v.filename }}</a>
+        <span style="color: #888; font-size: 0.85rem;"> — {{ v.created_at }}</span></li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+{% if not proposals %}
+<p>No grounded CV edits to propose for this job.</p>
+{% else %}
+<form method="post" action="/jobs/{{ job.id }}/tailor">
+<input type="hidden" name="proposal_count" value="{{ proposals | length }}">
+<p>Review each proposed edit below. Uncheck any you don't want, or edit the text directly.
+   Nothing is saved until you click "Save tailored CV".</p>
+
+{% for p in proposals %}
+<div style="border: 1px solid #ddd; border-radius: 6px; padding: 1rem; margin-bottom: 1rem;">
+    <label>
+        <input type="checkbox" name="include_{{ loop.index0 }}" checked>
+        <strong>{{ p.category }}</strong>
+    </label>
+    <input type="hidden" name="category_{{ loop.index0 }}" value="{{ p.category }}">
+    <ul style="margin: 0.4rem 0; font-size: 0.85rem;">
+        {% for s in p.skills %}
+        <li><strong>{{ s.skill }}</strong> — evidence: "{{ s.evidence }}"</li>
+        {% endfor %}
+    </ul>
+    <p style="font-size: 0.85rem; color: #666; margin: 0.3rem 0;">
+        <strong>Current:</strong> {{ p.current_text }}
+    </p>
+    <label style="font-size: 0.85rem;"><strong>Proposed</strong> (editable):</label>
+    <textarea name="proposed_text_{{ loop.index0 }}" rows="2" style="width: 100%;">{{ p.proposed_text }}</textarea>
+</div>
+{% endfor %}
+
+<button type="submit">Save tailored CV</button>
+</form>
+{% endif %}
+{% endblock %}

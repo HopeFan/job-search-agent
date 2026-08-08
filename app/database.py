@@ -87,7 +87,7 @@ def get_ranked_jobs(user_id: int) -> list:
     with get_connection() as conn:
         return conn.execute(
             """
-            SELECT j.title, j.company, j.location, j.url, j.posted_at,
+            SELECT j.id, j.title, j.company, j.location, j.url, j.posted_at,
                    uj.match_result, uj.status
             FROM user_jobs uj
             JOIN jobs j ON j.id = uj.job_id
@@ -102,6 +102,49 @@ def get_ranked_jobs(user_id: int) -> list:
             """,
             (user_id,),
         ).fetchall()
+
+
+def save_tailored_cv(user_id: int, job_id: int, filename: str, stored_path: str) -> None:
+    with get_connection() as conn:
+        conn.execute(
+            "INSERT INTO tailored_cvs (user_id, job_id, filename, stored_path) VALUES (?, ?, ?, ?)",
+            (user_id, job_id, filename, stored_path),
+        )
+
+
+def get_tailored_cvs_for_job(user_id: int, job_id: int):
+    with get_connection() as conn:
+        return conn.execute(
+            """
+            SELECT * FROM tailored_cvs
+            WHERE user_id = ? AND job_id = ?
+            ORDER BY created_at DESC
+            """,
+            (user_id, job_id),
+        ).fetchall()
+
+
+def get_tailored_cv(user_id: int, tailored_cv_id: int):
+    """Return one tailored CV row, scoped to this user so IDs can't be probed."""
+    with get_connection() as conn:
+        return conn.execute(
+            "SELECT * FROM tailored_cvs WHERE id = ? AND user_id = ?",
+            (tailored_cv_id, user_id),
+        ).fetchone()
+
+
+def get_job_match(user_id: int, job_id: int):
+    """Return one job's title/company plus its match_result, scoped to this user."""
+    with get_connection() as conn:
+        return conn.execute(
+            """
+            SELECT j.id, j.title, j.company, uj.match_result
+            FROM user_jobs uj
+            JOIN jobs j ON j.id = uj.job_id
+            WHERE uj.user_id = ? AND j.id = ? AND uj.match_result IS NOT NULL
+            """,
+            (user_id, job_id),
+        ).fetchone()
 
 
 def get_jobs_to_match(user_id: int) -> list:
