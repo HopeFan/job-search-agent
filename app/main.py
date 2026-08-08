@@ -37,7 +37,7 @@ from app.database import (
 from core.cv_extractor import extract_text, extract_structured
 from core.embedder import embed
 from core.cv_tailor import propose_edits, apply_proposals
-from core.outreach import draft_email
+from core.outreach import draft_email, draft_linkedin_message
 from docx import Document
 
 CV_STORE = Path(os.environ.get("CV_STORE_PATH", str(Path(__file__).parent.parent / "data" / "cvs")))
@@ -282,8 +282,8 @@ def download_tailored_cv(request: Request, tailored_cv_id: int):
     )
 
 
-@app.get("/jobs/{job_id}/draft-email")
-def draft_email_page(request: Request, job_id: int):
+@app.get("/jobs/{job_id}/draft-outreach")
+def draft_outreach_page(request: Request, job_id: int):
     username = request.session.get("username")
     if not username:
         return RedirectResponse("/login", status_code=302)
@@ -301,14 +301,19 @@ def draft_email_page(request: Request, job_id: int):
     job_structured = json.loads(job["structured"] or "{}")
     match_result = json.loads(job["match_result"])
 
-    draft = draft_email(
+    email_draft = draft_email(
+        cv_structured, job_structured, job["title"], job["company"],
+        match_result, user["display_name"],
+    )
+    linkedin_draft = draft_linkedin_message(
         cv_structured, job_structured, job["title"], job["company"],
         match_result, user["display_name"],
     )
 
-    return templates.TemplateResponse(request, "draft_email.html", {
+    return templates.TemplateResponse(request, "draft_outreach.html", {
         "job": job,
-        "draft": draft,
+        "email_draft": email_draft,
+        "linkedin_draft": linkedin_draft,
     })
 
 

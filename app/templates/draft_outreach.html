@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Draft Outreach — {{ job.title }} @ {{ job.company }}</h2>
+<p><a href="/jobs">← Back to jobs</a></p>
+
+<p style="background: #fff3cd; color: #856404; padding: 0.5rem; border-radius: 4px; font-size: 0.9rem;">
+    These are drafts only. Review and edit before sending — nothing is sent automatically.
+</p>
+
+<h3>Email</h3>
+<label style="display: block; margin-top: 0.5rem;"><strong>Subject</strong></label>
+<input type="text" value="{{ email_draft.subject }}" style="width: 100%; padding: 0.4rem;" onclick="this.select()">
+
+<label style="display: block; margin-top: 1rem;"><strong>Body</strong></label>
+<textarea rows="14" style="width: 100%; padding: 0.4rem;" onclick="this.select()">{{ email_draft.body }}</textarea>
+
+<h3 style="margin-top: 2rem;">LinkedIn connection note</h3>
+<p style="font-size: 0.85rem; color: {{ 'red' if linkedin_draft.character_count > 300 else '#666' }};">
+    {{ linkedin_draft.character_count }} / 300 characters
+</p>
+<textarea rows="5" style="width: 100%; padding: 0.4rem;" onclick="this.select()">{{ linkedin_draft.message }}</textarea>
+{% endblock %}

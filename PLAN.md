@@ -3,7 +3,7 @@
 > Update this file as we go. Tick steps off, and record decisions/tradeoffs
 > in the log at the bottom — that log becomes the design doc later.
 
-## Current step: 14
+## Current step: 15
 
 ## Working ritual (every step)
 1. Claude explains the concept + why, before any code.
@@ -33,7 +33,7 @@ Build locally through step 10. Deploy around step 11. Then ship to the host.
 | 11 | **FIRST DEPLOY** — host it, login + URLs working for both of us | Deployment; secrets in prod; the "to production" muscle | → Hosted | [x] |
 | 12 | CV gap suggestions (grounded, honesty line) | Grounding / anti-hallucination | Hosted | [x] |
 | 13 | CV tailoring — versioned .docx (PDF deferred, see log) | Document processing; formatting preservation | Hosted | [x] |
-| 14 | Draft email + LinkedIn message (draft-only) | Generation; tone control; guardrails | Hosted | [ ] |
+| 14 | Draft email + LinkedIn message (draft-only) | Generation; tone control; guardrails | Hosted | [x] |
 | 15 | Tracker (applied/emailed/messaged, dates, notes, CV version, search, download) | Data modeling; knowing where AI doesn't belong | Hosted | [ ] |
 | 16 | Interview tracking (multi-round) + thank-you drafts | Lifecycle modeling; grounded generation | Hosted | [ ] |
 | 17 | Insights / analytics (top skills, salary trends) | Aggregation; embeddings-as-data | Hosted | [ ] |
@@ -127,6 +127,12 @@ Verify live hosting prices at step 11.
 - Step 14 draft generation ships a plain, professional, grounded first pass —
   tone/voice tuning (how warm, how direct, what to lead with) is explicitly deferred
   to a follow-up pass once there's real generated output to react to, rather than
-  guessing the right voice upfront.
+  guessing the right voice upfront. Email and LinkedIn drafts share one review page
+  (/jobs/{id}/draft-outreach) since they're generated from the same inputs for the
+  same job. LinkedIn's 300-character connection-note limit is a real platform
+  constraint, not a style choice — enforced by computing character_count in code
+  (never trusting the model's own count) and showing it live in the UI. Candidate
+  name for sign-offs comes from the DB's display_name, not the CV extraction, since
+  the CV schema was never designed to carry a name field.
 
 ## jsamadi display name: "J. Samadi"  (placeholder — confirm real name)

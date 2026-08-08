@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, patch
 
-from core.outreach import draft_email
+from core.outreach import draft_email, draft_linkedin_message
 
 CV = {"summary": "Data engineer with 7 years experience.", "skills": ["Python", "SQL"]}
 MATCH_RESULT = {"reasons": ["Strong Python and SQL skills match the role."]}
@@ -48,3 +48,37 @@ def test_draft_email_instructs_generic_greeting_when_no_contact(mock_call):
     prompt = mock_call.call_args.kwargs["messages"][0]["content"]
     assert "No contact name is known" in prompt
     assert "never invent a name" in prompt
+
+
+@patch("core.outreach.tracked_call")
+def test_draft_linkedin_message_returns_message_and_character_count(mock_call):
+    mock_call.return_value = _fake_llm_response('{"message": "Hi, I would love to connect."}')
+    result = draft_linkedin_message(CV, {}, "Data Engineer", "Acme Co", MATCH_RESULT, "Erfan Hesami")
+    assert result["message"] == "Hi, I would love to connect."
+    assert result["character_count"] == len("Hi, I would love to connect.")
+
+
+@patch("core.outreach.tracked_call")
+def test_draft_linkedin_message_strips_markdown_fences(mock_call):
+    mock_call.return_value = _fake_llm_response('```json\n{"message": "Short note"}\n```')
+    result = draft_linkedin_message(CV, {}, "Data Engineer", "Acme Co", MATCH_RESULT, "Erfan Hesami")
+    assert result["message"] == "Short note"
+
+
+@patch("core.outreach.tracked_call")
+def test_draft_linkedin_message_instructs_300_char_limit(mock_call):
+    mock_call.return_value = _fake_llm_response('{"message": "m"}')
+    draft_linkedin_message(CV, {}, "Data Engineer", "Acme Co", MATCH_RESULT, "Erfan Hesami")
+
+    prompt = mock_call.call_args.kwargs["messages"][0]["content"]
+    assert "300 characters" in prompt
+
+
+@patch("core.outreach.tracked_call")
+def test_draft_linkedin_message_never_invents_contact_name(mock_call):
+    mock_call.return_value = _fake_llm_response('{"message": "m"}')
+    draft_linkedin_message(CV, {}, "Data Engineer", "Acme Co", MATCH_RESULT, "Erfan Hesami")
+
+    prompt = mock_call.call_args.kwargs["messages"][0]["content"]
+    assert "No contact name is known" in prompt
+    assert "never invent one" in prompt
