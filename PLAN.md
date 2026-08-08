@@ -34,7 +34,7 @@ Build locally through step 10. Deploy around step 11. Then ship to the host.
 | 12 | CV gap suggestions (grounded, honesty line) | Grounding / anti-hallucination | Hosted | [x] |
 | 13 | CV tailoring — versioned .docx (PDF deferred, see log) | Document processing; formatting preservation | Hosted | [x] |
 | 14 | Draft email + LinkedIn message (draft-only) | Generation; tone control; guardrails | Hosted | [x] |
-| 15 | Tracker (applied/emailed/messaged, dates, notes, CV version, search, download) | Data modeling; knowing where AI doesn't belong | Hosted | [ ] |
+| 15 | Tracker (applied/emailed/messaged, dates, notes, CV version, search, download) | Data modeling; knowing where AI doesn't belong | Hosted | [x] |
 | 16 | Interview tracking (multi-round) + thank-you drafts | Lifecycle modeling; grounded generation | Hosted | [ ] |
 | 17 | Insights / analytics (top skills, salary trends) | Aggregation; embeddings-as-data | Hosted | [ ] |
 | 18 | Interview-prep agent (company research from web + JD) | Agent loops; tool calling; multi-source synthesis; RAG | Hosted | [ ] |
@@ -144,5 +144,40 @@ Verify live hosting prices at step 11.
   (never trusting the model's own count) and showing it live in the UI. Candidate
   name for sign-offs comes from the DB's display_name, not the CV extraction, since
   the CV schema was never designed to carry a name field.
+
+- Step 15 tracker, remaining pieces: notes are a plain textarea that autosaves
+  `onblur` (not per-keystroke, and not a manual "Save" button — free text
+  shouldn't fire a request per letter, but should still save without an extra
+  click). Search is plain client-side JavaScript filtering the job cards
+  already rendered on the page (`oninput`, not `onkeyup`, so pasted text is
+  also caught) — no new route or query, since the full job list is already
+  sent to the browser at this scale (two users, low hundreds of jobs); a
+  server-side or AJAX search would be strictly more code for the same visible
+  result and isn't justified until the list is much larger. Download is a
+  plain CSV built with Python's stdlib `csv` module (no new dependency),
+  scoped to jobs with *any* tracker activity (status changed, applied,
+  emailed, messaged, or a note) rather than every matched job — it's meant to
+  export your activity log, not re-dump the matcher's output. CV version
+  linking auto-links the newest tailored CV to a job's tracker entry the
+  moment it's saved (`save_tailored_cv` now does the INSERT and the
+  `user_jobs.tailored_cv_id` UPDATE together) rather than requiring a manual
+  "pick which version" dropdown — tailoring only happens right before
+  applying in practice, so the simpler "latest wins" design matches the real
+  workflow and avoids a UI step for an edge case (tailoring the same job
+  twice and wanting to keep the older link) that hasn't come up.
+
+- Found via a real production error, not caught locally: `CREATE TABLE IF NOT
+  EXISTS` in schema.sql only helps brand-new databases. Once a table exists in
+  a deployed environment, SQLite skips its CREATE statement entirely on every
+  future `init_db.py` run — so columns added to schema.sql later (like step
+  15's `applied_at` etc.) never reach an already-existing production table on
+  their own, even though local dev looked fine (its columns had been added by
+  hand, outside of any committed code, earlier in the same session). Fixed
+  with a small hand-rolled migration list in `init_db.py`
+  (`NEW_COLUMNS`) that checks `PRAGMA table_info` and `ALTER TABLE ADD COLUMN`
+  for anything missing — safe to rerun, doesn't touch existing rows. This is
+  the general shape any future schema.sql column addition needs: add the
+  column to schema.sql for new databases, AND add an entry to NEW_COLUMNS for
+  databases that already exist elsewhere.
 
 ## jsamadi display name: "J. Samadi"  (placeholder — confirm real name)

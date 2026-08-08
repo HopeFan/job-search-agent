@@ -2,11 +2,25 @@
 
 {% block content %}
 <h2>Job Results</h2>
-<p><a href="/">← Home</a></p>
+<p><a href="/">← Home</a> · <a href="/jobs/download">Download tracked jobs (CSV) →</a></p>
 
 {% if not jobs %}
 <p>No matched jobs yet. Run the pipeline first.</p>
 {% else %}
+
+<input type="text" id="job-search" placeholder="Search by title, company, or location..."
+       style="width: 100%; padding: 0.5rem; margin-bottom: 1rem; font-size: 0.95rem;"
+       oninput="filterJobs()">
+
+<script>
+function filterJobs() {
+    const query = document.getElementById('job-search').value.toLowerCase();
+    document.querySelectorAll('.job-card').forEach(function (card) {
+        const text = card.textContent.toLowerCase();
+        card.style.display = text.includes(query) ? '' : 'none';
+    });
+}
+</script>
 
 {% set band_order = ['strong', 'moderate', 'weak'] %}
 {% set band_labels = {'strong': '✦ Strong', 'moderate': '◆ Moderate', 'weak': '◇ Weak'} %}
@@ -20,7 +34,7 @@
 </h3>
 
 {% for job in band_jobs %}
-<article style="border-left: 4px solid {{ band_colors[band] }}; padding-left: 1rem;">
+<article class="job-card" style="border-left: 4px solid {{ band_colors[band] }}; padding-left: 1rem;">
     <header style="margin-bottom: 0.5rem;">
         <strong><a href="{{ job.url }}" target="_blank">{{ job.title }}</a></strong>
         — {{ job.company }}
@@ -73,6 +87,14 @@
     </p>
     {% endif %}
 
+    {% if job.tailored_cv_id %}
+    <p style="margin: 0.3rem 0;">
+        <a href="/tailored-cv/{{ job.tailored_cv_id }}/download" style="font-size: 0.85rem;">
+            Download tailored CV ({{ job.tailored_cv_filename }}) →
+        </a>
+    </p>
+    {% endif %}
+
     <p style="margin: 0.3rem 0;">
         <a href="/jobs/{{ job.id }}/draft-outreach" style="font-size: 0.85rem;">Draft outreach message →</a>
     </p>
@@ -103,6 +125,12 @@
             </label>
         </form>
     </p>
+
+    <form method="post" action="/jobs/{{ job.id }}/notes">
+        <textarea name="notes" rows="2" placeholder="Notes..."
+                  style="width: 100%; font-size: 0.85rem; padding: 0.3rem;"
+                  onblur="this.form.submit();">{{ job.notes or '' }}</textarea>
+    </form>
 </article>
 {% endfor %}
 {% endif %}

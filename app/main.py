@@ -1,3 +1,5 @@
+import csv
+import io
 import json
 import os
 import re
@@ -9,7 +11,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from dotenv import load_dotenv
 from fastapi import FastAPI, Form, Request, UploadFile, File
-from fastapi.responses import RedirectResponse, FileResponse
+from fastapi.responses import RedirectResponse, FileResponse, Response
 from fastapi.templating import Jinja2Templates
 import bcrypt
 from starlette.middleware.sessions import SessionMiddleware
@@ -36,6 +38,8 @@ from app.database import (
     set_job_applied,
     set_job_emailed,
     set_job_messaged,
+    update_job_notes,
+    get_tracked_jobs,
 )
 from core.cv_extractor import extract_text, extract_structured
 from core.embedder import embed
@@ -188,6 +192,9 @@ def jobs_page(request: Request):
             "applied_at":  row["applied_at"],
             "emailed_at":  row["emailed_at"],
             "messaged_at": row["messaged_at"],
+            "notes":       row["notes"],
+            "tailored_cv_id":       row["tailored_cv_id"],
+            "tailored_cv_filename": row["tailored_cv_filename"],
         })
 
     return templates.TemplateResponse(request, "jobs.html", {"jobs": jobs})
@@ -221,6 +228,42 @@ def toggle_messaged(request: Request, job_id: int, messaged: bool = Form()):
     user = get_user(username)
     set_job_messaged(user["id"], job_id, messaged)
     return RedirectResponse("/jobs", status_code=302)
+
+
+@app.post("/jobs/{job_id}/notes")
+def update_notes(request: Request, job_id: int, notes: str = Form()):
+    username = request.session.get("username")
+    if not username:
+        return RedirectResponse("/login", status_code=302)
+    user = get_user(username)
+    update_job_notes(user["id"], job_id, notes)
+    return RedirectResponse("/jobs", status_code=302)
+
+
+@app.get("/jobs/download")
+def download_tracked_jobs(request: Request):
+    username = request.session.get("username")
+    if not username:
+        return RedirectResponse("/login", status_code=302)
+    user = get_user(username)
+
+    rows = get_tracked_jobs(user["id"])
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Title", "Company", "Location", "Status", "Applied", "Emailed", "Messaged", "Notes", "URL"])
+    for row in rows:
+        writer.writerow([
+            row["title"], row["company"], row["location"], row["status"],
+            row["applied_at"] or "", row["emailed_at"] or "", row["messaged_at"] or "",
+            row["notes"] or "", row["url"],
+        ])
+
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=tracked_jobs.csv"},
+    )
 
 
 @app.get("/jobs/{job_id}/tailor")

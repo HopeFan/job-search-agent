@@ -89,9 +89,11 @@ def get_ranked_jobs(user_id: int) -> list:
             """
             SELECT j.id, j.title, j.company, j.location, j.url, j.posted_at,
                    uj.match_result, uj.status,
-                   uj.applied_at, uj.emailed_at, uj.messaged_at
+                   uj.applied_at, uj.emailed_at, uj.messaged_at, uj.notes,
+                   uj.tailored_cv_id, tc.filename AS tailored_cv_filename
             FROM user_jobs uj
             JOIN jobs j ON j.id = uj.job_id
+            LEFT JOIN tailored_cvs tc ON tc.id = uj.tailored_cv_id
             WHERE uj.user_id = ? AND j.is_active = 1 AND uj.match_result IS NOT NULL
             ORDER BY
                 CASE json_extract(uj.match_result, '$.band')
@@ -105,11 +107,39 @@ def get_ranked_jobs(user_id: int) -> list:
         ).fetchall()
 
 
-def save_tailored_cv(user_id: int, job_id: int, filename: str, stored_path: str) -> None:
+def get_tracked_jobs(user_id: int) -> list:
+    """Return jobs with any tracker activity: status changed, applied/emailed/messaged, or a note."""
     with get_connection() as conn:
-        conn.execute(
+        return conn.execute(
+            """
+            SELECT j.title, j.company, j.location, j.url,
+                   uj.status, uj.applied_at, uj.emailed_at, uj.messaged_at, uj.notes
+            FROM user_jobs uj
+            JOIN jobs j ON j.id = uj.job_id
+            WHERE uj.user_id = ?
+              AND (
+                    uj.status != 'new'
+                    OR uj.applied_at IS NOT NULL
+                    OR uj.emailed_at IS NOT NULL
+                    OR uj.messaged_at IS NOT NULL
+                    OR (uj.notes IS NOT NULL AND uj.notes != '')
+              )
+            ORDER BY j.posted_at DESC
+            """,
+            (user_id,),
+        ).fetchall()
+
+
+def save_tailored_cv(user_id: int, job_id: int, filename: str, stored_path: str) -> None:
+    """Save a tailored CV and link it as this job's tracked version (the newest always wins)."""
+    with get_connection() as conn:
+        cursor = conn.execute(
             "INSERT INTO tailored_cvs (user_id, job_id, filename, stored_path) VALUES (?, ?, ?, ?)",
             (user_id, job_id, filename, stored_path),
+        )
+        conn.execute(
+            "UPDATE user_jobs SET tailored_cv_id = ? WHERE user_id = ? AND job_id = ?",
+            (cursor.lastrowid, user_id, job_id),
         )
 
 
@@ -184,6 +214,14 @@ def set_job_messaged(user_id: int, job_id: int, messaged: bool) -> None:
             WHERE user_id = ? AND job_id = ?
             """,
             (messaged, user_id, job_id),
+        )
+
+
+def update_job_notes(user_id: int, job_id: int, notes: str) -> None:
+    with get_connection() as conn:
+        conn.execute(
+            "UPDATE user_jobs SET notes = ? WHERE user_id = ? AND job_id = ?",
+            (notes, user_id, job_id),
         )
 
 
