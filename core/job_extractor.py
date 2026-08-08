@@ -15,11 +15,18 @@ Fields to extract:
 - visa_sponsorship: boolean or null — true if sponsorship is offered, false if not, null if not mentioned
 - salary_min: number or null — minimum salary if stated (in AUD, per year)
 - salary_max: number or null — maximum salary if stated (in AUD, per year)
+- contact_name: string or null — a named person to contact, only if a name is given
+- contact_email: string or null — an email address, only if literally printed in the text
+- reports_to: string or null — the role/title this position reports to (e.g. "Head of Data
+  Engineering"), only if explicitly stated
+- department: string or null — the team or department this role sits within, only if stated
 
 Return only valid JSON. No explanation, no markdown fences.
 
 Job description:
 {description}"""
+
+CONTACT_FIELDS = ["contact_name", "contact_email", "reports_to", "department"]
 
 
 def strip_html(html: str) -> str:
@@ -43,4 +50,16 @@ def extract_job_structured(description: str) -> dict:
     if raw.startswith("```"):
         lines = raw.splitlines()
         raw = "\n".join(lines[1:-1]).strip()
-    return json.loads(raw)
+    result = json.loads(raw)
+
+    # Enforce the honesty line in code, not just the prompt: a claimed contact
+    # detail must literally appear in the source text, or it's treated as
+    # fabricated and nulled out. Same pattern as the matcher's gap suggestions —
+    # prompt instructions alone aren't reliable across repeated calls.
+    clean_lower = clean.lower()
+    for field in CONTACT_FIELDS:
+        value = result.get(field)
+        if value and str(value).lower() not in clean_lower:
+            result[field] = None
+
+    return result
