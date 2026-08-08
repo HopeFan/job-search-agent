@@ -124,4 +124,9 @@ Verify live hosting prices at step 11.
   10-second manual "Export to PDF" in Word, which the user already has. Revisit only if
   manual export becomes a real recurring pain point, not preemptively.
 
+- Step 14 draft generation ships a plain, professional, grounded first pass —
+  tone/voice tuning (how warm, how direct, what to lead with) is explicitly deferred
+  to a follow-up pass once there's real generated output to react to, rather than
+  guessing the right voice upfront.
+
 ## jsamadi display name: "J. Samadi"  (placeholder — confirm real name)

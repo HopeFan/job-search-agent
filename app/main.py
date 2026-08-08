@@ -37,6 +37,7 @@ from app.database import (
 from core.cv_extractor import extract_text, extract_structured
 from core.embedder import embed
 from core.cv_tailor import propose_edits, apply_proposals
+from core.outreach import draft_email
 from docx import Document
 
 CV_STORE = Path(os.environ.get("CV_STORE_PATH", str(Path(__file__).parent.parent / "data" / "cvs")))
@@ -279,6 +280,36 @@ def download_tailored_cv(request: Request, tailored_cv_id: int):
         filename=tailored["filename"],
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     )
+
+
+@app.get("/jobs/{job_id}/draft-email")
+def draft_email_page(request: Request, job_id: int):
+    username = request.session.get("username")
+    if not username:
+        return RedirectResponse("/login", status_code=302)
+    user = get_user(username)
+
+    job = get_job_match(user["id"], job_id)
+    if not job:
+        return RedirectResponse("/jobs", status_code=302)
+
+    cv = get_current_cv(user["id"])
+    if not cv:
+        return RedirectResponse("/cv", status_code=302)
+
+    cv_structured = json.loads(cv["structured"])
+    job_structured = json.loads(job["structured"] or "{}")
+    match_result = json.loads(job["match_result"])
+
+    draft = draft_email(
+        cv_structured, job_structured, job["title"], job["company"],
+        match_result, user["display_name"],
+    )
+
+    return templates.TemplateResponse(request, "draft_email.html", {
+        "job": job,
+        "draft": draft,
+    })
 
 
 @app.get("/costs")

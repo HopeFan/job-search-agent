@@ -138,7 +138,7 @@ def get_job_match(user_id: int, job_id: int):
     with get_connection() as conn:
         return conn.execute(
             """
-            SELECT j.id, j.title, j.company, uj.match_result
+            SELECT j.id, j.title, j.company, j.structured, uj.match_result
             FROM user_jobs uj
             JOIN jobs j ON j.id = uj.job_id
             WHERE uj.user_id = ? AND j.id = ? AND uj.match_result IS NOT NULL
